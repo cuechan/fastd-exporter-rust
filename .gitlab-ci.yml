@@ -1,0 +1,23 @@
+image: rustlang/rust:nightly
+
+cache:
+  paths:
+    - target/
+
+build:
+  stage: build
+  script:
+  - cargo build
+  - cargo test
+
+
+package:
+  stage: deploy
+  artifacts:
+    paths:
+      - target/debian/*.deb
+  before_script:
+    - cargo install cargo-deb
+  script:
+    - cargo build --release
+    - cargo deb

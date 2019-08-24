@@ -1,0 +1,25 @@
+[package]
+name = "fastd-exporter-rust"
+version = "0.1.0"
+authors = ["Paul Maruhn <paulmaruhn@posteo.de>"]
+edition = "2018"
+
+[package.metadata.deb]
+license-file = ["LICENSE", "0"]
+extended-description = "Prometheus node exporter for fastd."
+maintainer = "Paul Maruhn <paulmaruhn@posteo.de>"
+copyright = "Paul Maruhn <paulmaruhn@posteo.de>"
+depends = "$auto, fastd"
+section = "utility"
+priority = "optional"
+assets = [
+        ["target/release/fastd-exporter-rust", "usr/bin/", "755"],
+        ["assets/fastd-exporter-rust@.service", "lib/systemd/system/", "644"],
+]
+
+[dependencies]
+clap = "2.33.0"
+prometheus = "0.7.0"
+serde_json = "1.0.40"
+serde = {version = "1.0.99", features = ["derive"]}
+hyper = "0.12.33"
