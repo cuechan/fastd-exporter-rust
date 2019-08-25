@@ -14,12 +14,15 @@ use std::clone::Clone;
 use std::io::Read;
 use std::net::SocketAddr;
 use std::os::unix::net::UnixStream;
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
 use std::time;
 use std::boxed::Box;
 use std::collections::HashMap;
+use log::{error, warn, info, debug, trace};
+use pretty_env_logger;
+use std::env;
 
 mod fastd;
 
@@ -40,6 +43,9 @@ macro_rules! map(
 
 
 fn main() {
+	// env::set_var("FASTD", "debug");
+	pretty_env_logger::init_custom_env("FASTDNODEEXPORTER");
+
 	let matches = clap::App::new(env!("CARGO_PKG_NAME"))
 		.author(env!("CARGO_PKG_AUTHORS"))
 		.about(env!("CARGO_PKG_DESCRIPTION"))
@@ -67,30 +73,36 @@ fn main() {
 	}
 
 
-	let socket_path = match (matches.value_of("iface"), matches.value_of("socket")) {
-		(Some(iface), None) => format!("/var/run/fastd.{}.sock", iface.clone()),
-		(None, Some(path)) => path.to_owned(),
+	let socket_path: PathBuf = match (matches.value_of("iface"), matches.value_of("socket")) {
+		(Some(iface), None) => PathBuf::from(format!("/var/run/fastd.{}.sock", iface.clone())),
+		(None, Some(path)) => PathBuf::from(path.to_owned()),
 		_ => panic!("either iface nor socket passed")
 	};
 
-	if !Path::new(&socket_path).exists() {
-		eprintln!("{} does not exists", socket_path);
+	if !socket_path.exists() {
+		error!("{} does not exists", socket_path.to_str().unwrap());
 		exit(1);
 	}
 
 
+	start_server(LISTEN_ADDR, socket_path);
+}
+
+
+
+pub fn start_server(listen_addr: &str, fastd_socket: PathBuf) {
 	let new_service = move || {
-		let socket_path = socket_path.clone();
+		let socket_path = fastd_socket.clone();
 
 		service_fn(move |r| {
-			println!("[{}] {} {}", r.headers().get("User-Agent").unwrap().to_str().unwrap(), r.method(), r.uri());
+			debug!("[{}] {} {}", r.headers().get("User-Agent").unwrap().to_str().unwrap(), r.method(), r.uri());
 
 			if r.method() != Method::GET || r.uri().path() != "/metrics" {
 				return Err("error");
 			}
 
 
-			let metrics = get_metrics(&socket_path);
+			let metrics = get_metrics(socket_path.clone());
 
 			Ok(Response::builder()
 				.status(200)
@@ -101,7 +113,7 @@ fn main() {
 		})
     };
 
-    let server = Server::bind(&SocketAddr::from_str(LISTEN_ADDR).unwrap())
+    let server = Server::bind(&SocketAddr::from_str(listen_addr).unwrap())
         .serve(new_service)
 		.map_err(|e| {
 			panic!("error occured: {}", e)
@@ -112,11 +124,12 @@ fn main() {
 
 
 
-pub fn get_metrics<T: AsRef<Path>>(path: T) -> Vec<u8> {
-	let reg = prometheus::Registry::new();
-	let fastd_status = get_fastd_stats(&path.as_ref().to_str().unwrap());
 
-	eprintln!("{}", json::to_string_pretty(&fastd_status).unwrap());
+pub fn get_metrics(path: PathBuf) -> Vec<u8> {
+	let reg = prometheus::Registry::new();
+	let fastd_status = get_fastd_stats(path);
+
+//	eprintln!("{}", json::to_string_pretty(&fastd_status).unwrap());
 
 
 
@@ -189,33 +202,20 @@ pub fn get_metrics<T: AsRef<Path>>(path: T) -> Vec<u8> {
 	TextEncoder::new().encode(&metrics, &mut buffer).unwrap();
 
 	return buffer;
-	"Hello, prometheus!".bytes().collect()
 }
 
 
-
-
-pub struct PeerMetric {
-	peer_key: String,
-	name: String,
-}
-
-
-
-
-
-
-
-pub fn get_fastd_stats(path: &str) -> FastdStatus {
-	let mut socket = UnixStream::connect(path.clone()).unwrap_or_else(|e| {
-		eprintln!("can't connect to {}: {}", path, e);
-		exit(1);
-	});
+pub fn get_fastd_stats(path: PathBuf) -> FastdStatus {
+	let mut socket = UnixStream::connect(path.clone())
+		.unwrap_or_else(|e| {
+			error!("can't connect to {}: {}", path.to_string_lossy(), e);
+			exit(1);
+		});
 
 	let mut status_json = String::new();
 
 	socket.read_to_string(&mut status_json).unwrap_or_else(|e| {
-		eprintln!("can't read from {}: {}", path, e);
+		eprintln!("can't read from {}: {}", path.to_string_lossy(), e);
 		exit(1);
 	});
 
