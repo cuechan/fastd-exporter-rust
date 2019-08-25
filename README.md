@@ -21,5 +21,5 @@ The http listen address is currently hardcoded to `0.0.0.0:9101`.
 Todo
 ----
 
-[] set http listening address with a `-l` or `--listen` argument.
-[] add more metrics?
+* [ ] set http listening address with a `-l` or `--listen` argument.
+* [ ] add more metrics?
