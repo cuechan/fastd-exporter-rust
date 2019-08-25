@@ -1,6 +1,6 @@
 [package]
 name = "fastd-exporter-rust"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Paul Maruhn <paulmaruhn@posteo.de>"]
 edition = "2018"
 
