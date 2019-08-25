@@ -22,4 +22,5 @@ Todo
 ----
 
 * [ ] set http listening address with a `-l` or `--listen` argument.
+* [ ] change binary name to `prometheus-fastd-exported` since this is the naming convention
 * [ ] add more metrics?
