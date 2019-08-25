@@ -127,11 +127,11 @@ pub fn get_metrics<T: AsRef<Path>>(path: T) -> Vec<u8> {
 		// `IntoIter` trait is implemented for `Connection`
 
 		for (metric, traffic) in peer.connection.unwrap().statistics.into_iter() {
-			let mut traffic_gauge = Gauge::with_opts(Opts {
+			let traffic_gauge = Gauge::with_opts(Opts {
 				namespace: "fastd".to_owned(),
 				subsystem: "peer".to_owned(),
-				name: metric,
-				help: "does things".to_owned(),
+				name: metric.clone(),
+				help: format!("per peer traffic {}", metric.clone()),
 				const_labels: map!{
 					"key".to_owned()       => public_key.clone(),
 					"name".to_owned()      => peer.name.clone(),
@@ -144,8 +144,41 @@ pub fn get_metrics<T: AsRef<Path>>(path: T) -> Vec<u8> {
 
 			traffic_gauge.set(traffic.bytes)
 		}
-
 	}
+
+
+
+
+	for (metric, traffic) in fastd_status.statistics.into_iter() {
+		let traffic_gauge = Gauge::with_opts(Opts {
+			namespace: "fastd".to_owned(),
+			subsystem: "total".to_owned(),
+			name: metric.clone(),
+			help: format!("total traffic {}", metric.clone()),
+			const_labels: map!{
+				"interface".to_owned() => fastd_status.interface.clone()
+			},
+			variable_labels: vec![],
+		}).unwrap();
+
+		reg.register(Box::new(traffic_gauge.clone())).unwrap();
+		traffic_gauge.set(traffic.bytes)
+	}
+
+
+	let uptime = Gauge::with_opts(Opts {
+		namespace: "fastd".to_owned(),
+		subsystem: "total".to_owned(),
+		name: "uptime".to_owned(),
+		help: "fastd uptime".to_owned(),
+		const_labels: map!{
+			"interface".to_owned() => fastd_status.interface.clone()
+		},
+		variable_labels: vec![],
+	}).unwrap();
+
+	uptime.set(fastd_status.uptime);
+
 
 
 
