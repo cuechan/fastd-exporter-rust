@@ -5,7 +5,7 @@ Building
 --------
 
 `cargo build --release` to build the project.
-The binary is then located in `target/debug/fastd-exporter-rust`.
+The binary is then located in `target/release/fastd-exporter-rust`.
 
 To build a `.deb`ian package install `cargo-deb` with `cargo install cargo-deb` and run `cargo deb` to build the package.
 The package is then, depending on the version, located in `target/debian/fastd-exporter-rust_<version>_amd64.deb`
