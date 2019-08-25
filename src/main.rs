@@ -73,6 +73,11 @@ fn main() {
 		_ => panic!("either iface nor socket passed")
 	};
 
+	if !Path::new(&socket_path).exists() {
+		eprintln!("{} does not exists", socket_path);
+		exit(1);
+	}
+
 
 	let new_service = move || {
 		let socket_path = socket_path.clone();
