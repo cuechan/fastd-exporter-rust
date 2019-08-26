@@ -16,11 +16,11 @@ Running
 Just run `./fastd-exporter-rust -i <interface>` or `./fastd-exporter-rust -s <socket>`.
 When using `-i <interafce>` the socket is expected to be at `/var/run/fastd.<interface>.sock`.
 
-The http listen address is currently hardcoded to `0.0.0.0:9101`.
+~~The http listen address is currently hardcoded to `0.0.0.0:9101`.~~
 
 Todo
 ----
 
-* [ ] set http listening address with a `-l` or `--listen` argument.
+* [x] set http listening address with a `--web.listen-address` argument.
 * [ ] change binary name to `prometheus-fastd-exported` since this is the naming convention
 * [ ] add more metrics?
