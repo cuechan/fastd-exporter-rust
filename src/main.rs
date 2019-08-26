@@ -26,7 +26,7 @@ use std::env;
 
 mod fastd;
 
-const LISTEN_ADDR: &str = "0.0.0.0:9101";
+const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9101";
 
 
 macro_rules! map(
@@ -65,6 +65,17 @@ fn main() {
 			.help("Path to status socket")
 			.group("status_socket")
 		)
+		.arg(Arg::with_name("listen-address")
+			.takes_value(true)
+			.long("--web.listen-address")
+			.help("Listen address for http server")
+			.default_value(DEFAULT_LISTEN_ADDR)
+			.validator(|v| {
+				SocketAddr::from_str(&v)
+					.map_err(|e| format!("{}", e))
+					.map(|_| ())
+			})
+		)
 		.get_matches();
 
 	if !matches.is_present("status_socket") {
@@ -84,8 +95,7 @@ fn main() {
 		exit(1);
 	}
 
-
-	start_server(LISTEN_ADDR, socket_path);
+	start_server(matches.value_of("listen-address").unwrap(), socket_path);
 }
 
 
