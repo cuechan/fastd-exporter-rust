@@ -22,5 +22,5 @@ Todo
 ----
 
 * [x] set http listening address with a `--web.listen-address` argument.
-* [ ] change binary name to `prometheus-fastd-exported` since this is the naming convention
+* [x] change binary name to `prometheus-fastd-exporter` since this is the naming convention
 * [ ] add more metrics?
