@@ -23,4 +23,5 @@ Todo
 
 * [x] set http listening address with a `--web.listen-address` argument.
 * [x] change binary name to `prometheus-fastd-exporter` since this is the naming convention
+* [ ] add a proper systemd-service file
 * [ ] add more metrics?
