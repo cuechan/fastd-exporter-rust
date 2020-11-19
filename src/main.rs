@@ -30,21 +30,21 @@ const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9101";
 
 
 macro_rules! map(
-    { $($key:expr => $value:expr),+ } => {
-        {
-            let mut map = ::std::collections::HashMap::new();
-            $(
-                map.insert($key, $value);
-            )+
-            map
-        }
-     };
+	{ $($key:expr => $value:expr),+ } => {
+		{
+			let mut map = ::std::collections::HashMap::new();
+			$(
+				map.insert($key, $value);
+			)+
+			map
+		}
+	 };
 );
 
 
 fn main() {
 	// env::set_var("FASTD", "debug");
-	pretty_env_logger::init_custom_env("FASTDNODEEXPORTER");
+	pretty_env_logger::init();
 
 	let matches = clap::App::new(env!("CARGO_PKG_NAME"))
 		.author(env!("CARGO_PKG_AUTHORS"))
@@ -121,15 +121,15 @@ pub fn start_server(listen_addr: &str, fastd_socket: PathBuf) {
 				.unwrap()
 			)
 		})
-    };
+	};
 
-    let server = Server::bind(&SocketAddr::from_str(listen_addr).unwrap())
-        .serve(new_service)
+	let server = Server::bind(&SocketAddr::from_str(listen_addr).unwrap())
+		.serve(new_service)
 		.map_err(|e| {
 			panic!("error occured: {}", e)
 		});
 
-    hyper::rt::run(server);
+	hyper::rt::run(server);
 }
 
 
