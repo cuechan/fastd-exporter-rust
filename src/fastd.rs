@@ -1,5 +1,5 @@
 #![warn(dead_code)]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::iter::IntoIterator;
 use std::vec::IntoIter;
@@ -13,7 +13,6 @@ pub struct FastdStatus {
 	pub peers: HashMap<String, Peer>,
 }
 
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Peer {
@@ -21,7 +20,6 @@ pub struct Peer {
 	pub address: String,
 	pub connection: Option<Connection>,
 }
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -39,15 +37,15 @@ impl IntoIterator for Statistics {
 
 	fn into_iter(self) -> Self::IntoIter {
 		vec![
-			("rx".to_owned(),           self.rx),
+			("rx".to_owned(), self.rx),
 			("rx_reordered".to_owned(), self.rx_reordered),
-			("tx".to_owned(),           self.tx),
-			("tx_dropped".to_owned(),   self.tx_dropped),
-			("tx_error".to_owned(),     self.tx_error),
-		].into_iter()
+			("tx".to_owned(), self.tx),
+			("tx_dropped".to_owned(), self.tx_dropped),
+			("tx_error".to_owned(), self.tx_error),
+		]
+		.into_iter()
 	}
 }
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -57,7 +55,6 @@ pub struct Connection {
 	pub statistics: Statistics,
 	pub mac_addresses: Vec<String>,
 }
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
