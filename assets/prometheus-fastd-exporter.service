@@ -9,13 +9,7 @@ User=root
 Group=root
 Restart=on-failure
 PrivateTmp=no
-CapabilityBoundingSet=CAP_NET_ADMIN
 MemoryLimit=50M
-ProtectSystem=full
-ProtectKernelTunables=true
-ProtectControlGroups=true
-MemoryDenyWriteExecute=true
-RestrictRealtime=true
 
 [Install]
 WantedBy=multi-user.target
