@@ -34,7 +34,9 @@ copyright = "Paul Maruhn <paulmaruhn@posteo.de>"
 depends = "$auto, fastd"
 section = "utility"
 priority = "optional"
+conf-files = ["/etc/default/prometheus-fastd-exporter"]
 assets = [
     ["target/release/prometheus-fastd-exporter", "usr/bin/", "755"],
-    ["assets/fastd-exporter-rust@.service", "lib/systemd/system/", "644"],
+    ["assets/prometheus-fastd-exporter.service", "lib/systemd/system/", "644"],
+    ["assets/prometheus-fastd-exporter", "etc/default/", "644"],
 ]

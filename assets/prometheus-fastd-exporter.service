@@ -2,13 +2,13 @@
 Description="Prometheus exporter for fastd tunnels"
 
 [Service]
-EnvironmentFile=/etc/default/fastd-exporter-rust
-ExecStart=/usr/bin/fastd-exporter-rust $ARGS %i
+EnvironmentFile=/etc/default/prometheus-fastd-exporter
+ExecStart=/usr/bin/prometheus-fastd-exporter $ARGS
 Restart=always
 User=root
 Group=root
 Restart=on-failure
-PrivateTmp=yes
+PrivateTmp=no
 CapabilityBoundingSet=CAP_NET_ADMIN
 MemoryLimit=50M
 ProtectSystem=full

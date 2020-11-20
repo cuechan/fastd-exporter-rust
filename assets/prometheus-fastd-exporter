@@ -1,0 +1,6 @@
+ARGS=""
+
+# --web.listen-address       web endpoint listen address
+# --socket                   path to fastd status socket
+#                            can occure multiple times
+#                            `--socket vpn1 --socket vpn2`
