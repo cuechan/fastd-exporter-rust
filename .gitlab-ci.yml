@@ -33,7 +33,7 @@ test:
 
 
 pages:
-  image: debain:stable-slim
+  image: debian:stable-slim
   stage: deploy
   before_script:
   - apt update && apt -y install pandoc
