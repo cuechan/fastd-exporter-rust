@@ -4,15 +4,18 @@ cache:
   paths:
     - target/
 
+stages:
+  - build
+  - test
+  - deploy
+
 build:
   stage: build
   script:
   - cargo build
-  - cargo test
 
-
-package:
-  stage: deploy
+build_package:
+  stage: build
   artifacts:
     paths:
       - target/debian/*.deb
@@ -21,3 +24,24 @@ package:
   script:
     - cargo build --release
     - cargo deb
+
+test:
+  stage: test
+  script:
+  - cargo test
+
+
+pages:
+  image: alpine:latest
+  stage: deploy
+  before_script:
+  - apk update && apk add pandoc
+  script:
+  - mkdir public
+  - cp target/debian/*.deb public/prometheus-fastd-exporter.deb
+  - pandoc -f markdown -t html README.md > public/index.html
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
