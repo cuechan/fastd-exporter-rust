@@ -27,6 +27,7 @@ build_package:
 
 test:
   stage: test
+  needs: [build]
   script:
   - cargo test
 
