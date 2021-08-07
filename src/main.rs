@@ -1,16 +1,9 @@
 use clap;
 use clap::Arg;
 use fastd::FastdStatus;
-use hyper;
-use hyper::rt::Future;
-use hyper::service::service_fn;
-use hyper::service::service_fn_ok;
-use hyper::{header::CONTENT_TYPE, Body, Method, Request, Response, Server};
 use log::{debug, error, info, trace, warn};
 use pretty_env_logger;
-use prometheus::core::{GenericGauge, MetricVec};
-use prometheus::register;
-use prometheus::{Counter, CounterVec, Encoder, Gauge, GaugeVec, HistogramVec, Opts, TextEncoder};
+use prometheus::{Counter, Encoder, GaugeVec, Opts, Registry, TextEncoder};
 use serde_json as json;
 use std::boxed::Box;
 use std::clone::Clone;
@@ -22,14 +15,13 @@ use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
-use std::time;
-use zmq;
+use tiny_http::{self, Method, Request, Response, Server};
 
 mod fastd;
-mod zmq_service;
 
-const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9101";
-const ZMQ_BIND_ADDRESS: &str = "tcp://0.0.0.0:25259";
+const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9281";
+const METRICS_NAMESPACE: &str = "fastd";
+
 
 macro_rules! map(
 	{ $($key:expr => $value:expr),+ } => {
@@ -61,6 +53,7 @@ fn main() {
 				// following allows `--sock /tmp/vpn01 --sock /tmp/vpn02` but not --sock /tmp/vpn01,/tmp/vpn02
 				.number_of_values(1)
 				.multiple(true)
+				.required(true)
 				.validator(|s| match PathBuf::from(s).exists() {
 					true => Ok(()),
 					false => Err("socket does not exists".to_string()),
@@ -76,117 +69,70 @@ fn main() {
 		)
 		.get_matches();
 
-	if !matches.is_present("status_socket") {
-		eprintln!("interface or socket required. Try {} --help", env!("CARGO_PKG_NAME"));
-		exit(1);
-	}
+	// if !matches.is_present("status_socket") {
+	// 	eprintln!("interface or socket required. Try {} --help", env!("CARGO_PKG_NAME"));
+	// 	exit(1);
+	// }
 
 	let socket_paths: Vec<PathBuf> = matches.values_of("socket").unwrap().map(|x| PathBuf::from(x)).collect();
 
-	// zmq_service::start_zmq_service(socket_paths);
-
-	start_server(matches.value_of("listen-address").unwrap(), socket_paths);
+	start_server(
+		matches.value_of("listen-address").unwrap().parse().unwrap(),
+		socket_paths,
+	);
 }
 
-pub fn start_server(listen_addr: &str, fastd_sockets: Vec<PathBuf>) {
-	let new_service = move || {
+pub fn start_server(listen_addr: SocketAddr, fastd_sockets: Vec<PathBuf>) {
+	let http_server = Server::http(listen_addr).unwrap();
+
+	for request in http_server.incoming_requests() {
 		let socket_paths = fastd_sockets.clone();
 
-		service_fn(move |r| {
-			debug!(
-				"[{}] {} {}",
-				r.headers().get("User-Agent").unwrap().to_str().unwrap(),
-				r.method(),
-				r.uri()
-			);
+		if request.method() != &Method::Get || request.url() != "/metrics" {
+			request
+				.respond(Response::from_string(include_str!("index.html")))
+				.unwrap();
+			continue;
+		}
 
-			if r.method() != Method::GET || r.uri().path() != "/metrics" {
-				return Err("error");
-			}
+		let mut instance_data = vec![];
 
-			let mut instance_data = vec![];
+		for ref socket in &socket_paths {
+			instance_data.push(get_fastd_stats(socket));
+		}
 
-			for ref socket in &socket_paths {
-				instance_data.push(get_fastd_stats(socket));
-			}
-
-			let metrics = get_metrics(instance_data);
-
-			Ok(Response::builder()
-				.status(200)
-				.header(CONTENT_TYPE, "text/plain")
-				.body(Body::from(metrics))
-				.unwrap())
-		})
-	};
-
-	let server = Server::bind(&SocketAddr::from_str(listen_addr).unwrap())
-		.serve(new_service)
-		.map_err(|e| panic!("error occured: {}", e));
-
-	hyper::rt::run(server);
+		let metrics = get_metrics(instance_data);
+		request.respond(Response::from_data(metrics)).unwrap();
+	}
 }
 
 pub fn get_metrics(fastd_statuses: Vec<FastdStatus>) -> Vec<u8> {
 	let reg = prometheus::Registry::new();
 
 	let peer_statistics_gauge: GaugeVec = GaugeVec::new(
-		Opts {
-			namespace: "fastd".into(),
-			subsystem: "peer".into(),
-			name: "traffic".into(),
-			help: "per peer statistics".into(),
-			const_labels: HashMap::new(),
-			variable_labels: vec![],
-		},
+		Opts::new("fastd_peer_traffic", "per peer statistics"),
 		&["key", "name", "iface", "type", "kind"],
-	)
-	.unwrap();
-
-	let peer_uptime: GaugeVec = GaugeVec::new(
-		Opts {
-			namespace: "fastd".into(),
-			subsystem: "peer".into(),
-			name: "uptime".into(),
-			help: "per peer statistics".into(),
-			const_labels: HashMap::new(),
-			variable_labels: vec![],
-		},
-		&["key", "name", "interface"],
-	)
-	.unwrap();
-
+	).unwrap();
 	reg.register(Box::new(peer_statistics_gauge.clone())).unwrap();
 
+	let peer_uptime: GaugeVec = GaugeVec::new(
+		Opts::new("fastd_peer_connection_uptime", "per peer statistics"),
+		&["key", "name", "interface"],
+	).unwrap();
+	reg.register(Box::new(peer_uptime.clone())).unwrap();
+
+
 	let fastd_statistics = GaugeVec::new(
-		Opts {
-			namespace: "fastd".to_owned(),
-			subsystem: "total".to_owned(),
-			name: "statistics".into(),
-			help: "total traffic {}".into(),
-			const_labels: HashMap::new(),
-			variable_labels: vec!["iface".into()],
-		},
+		Opts::new("fastd_total_traffic", "total traffic"),
 		&["iface", "type", "kind"],
-	)
-	.unwrap();
+	).unwrap();
 
 	reg.register(Box::new(fastd_statistics.clone())).unwrap();
 
 	let uptime: GaugeVec = GaugeVec::new(
-		Opts {
-			namespace: "fastd".to_owned(),
-			subsystem: "total".to_owned(),
-			name: "uptime".to_owned(),
-			help: "fastd uptime".to_owned(),
-			const_labels: HashMap::new(),
-			variable_labels: vec!["iface".into()],
-		},
-		&["iface"],
-	)
-	.unwrap();
-
-	//	eprintln!("{}", json::to_string_pretty(&fastd_status).unwrap());
+		Opts::new("fastd_total_uptime", "fastd uptime"),
+		&["iface"]
+	).unwrap();
 
 	for instance in fastd_statuses {
 		uptime.with_label_values(&[&instance.interface]).set(instance.uptime);
@@ -195,7 +141,6 @@ pub fn get_metrics(fastd_statuses: Vec<FastdStatus>) -> Vec<u8> {
 			peer_uptime
 				.with_label_values(&[&public_key, &peer.name, &instance.interface])
 				.set(peer.connection.clone().unwrap().established);
-
 
 			for (ref typ, ref stats) in peer.connection.unwrap().statistics {
 				peer_statistics_gauge

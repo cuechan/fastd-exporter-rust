@@ -1,5 +1,5 @@
 [Unit]
-Description="Prometheus exporter for fastd tunnels"
+Description="Prometheus exporter for fastd"
 
 [Service]
 EnvironmentFile=/etc/default/prometheus-fastd-exporter
