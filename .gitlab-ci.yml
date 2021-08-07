@@ -33,10 +33,10 @@ test:
 
 
 pages:
-  image: alpine:latest
+  image: stable:slim
   stage: deploy
   before_script:
-  - apk update && apk add pandoc
+  - apt update && apt -y install pandoc
   script:
   - mkdir public
   - cp target/debian/*.deb public/prometheus-fastd-exporter.deb
