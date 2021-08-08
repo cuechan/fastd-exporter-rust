@@ -1,13 +1,13 @@
 use clap;
 use clap::Arg;
 use fastd::FastdStatus;
+#[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use pretty_env_logger;
-use prometheus::{Counter, Encoder, GaugeVec, Opts, Registry, TextEncoder};
+use prometheus::{Encoder, GaugeVec, Opts, TextEncoder};
 use serde_json as json;
 use std::boxed::Box;
 use std::clone::Clone;
-use std::collections::HashMap;
 use std::env;
 use std::io::Read;
 use std::net::SocketAddr;
@@ -15,25 +15,12 @@ use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
-use tiny_http::{self, Method, Request, Response, Server};
+use tiny_http::{self, Method, Response, Server};
 
 mod fastd;
 
 const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9281";
-const METRICS_NAMESPACE: &str = "fastd";
 
-
-macro_rules! map(
-	{ $($key:expr => $value:expr),+ } => {
-		{
-			let mut map = ::std::collections::HashMap::new();
-			$(
-				map.insert($key, $value);
-			)+
-			map
-		}
-	 };
-);
 
 fn main() {
 	// env::set_var("FASTD", "debug");
