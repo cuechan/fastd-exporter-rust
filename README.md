@@ -1,27 +1,28 @@
-Fastd exporter for prometheus
+[prometheus-fastd-exporter](https://paul.pages.chaotikum.org/prometheus-fastd-exporter/)
 =============================
+[![pipeline status](https://git.chaotikum.org/paul/prometheus-fastd-exporter/badges/master/pipeline.svg)](https://git.chaotikum.org/paul/prometheus-fastd-exporter/-/commits/master)
+
+A prometheus exporter for fastd.
+
+
+Debian package
+--------------
+
+[should be here](https://paul.pages.chaotikum.org/prometheus-fastd-exporter/prometheus-fastd-exporter.deb).
+After installing it with `dpgk -i prometheus-fastd-exporter.deb` you need to reload systemd: `sudo systemctl daemon-relaod`.
+The exporter is not enabled by default. Enable it with `sudo systemctl enable prometheus-fastd-exporter`.
+
 
 Building
 --------
 
 `cargo build --release` to build the project.
-The binary is then located in `target/release/fastd-exporter-rust`.
+The binary is located in `target/release/prometheus-fastd-exporter`.
 
-To build a `.deb`ian package install `cargo-deb` with `cargo install cargo-deb` and run `cargo deb` to build the package.
+To build a debian package install `cargo-deb` with `cargo install cargo-deb` and run `cargo deb`.
 The package is then, depending on the version, located in `target/debian/fastd-exporter-rust_<version>_amd64.deb`
 
 
 Running
 -------
-Just run `./fastd-exporter-rust -i <interface>` or `./fastd-exporter-rust -s <socket>`.
-When using `-i <interafce>` the socket is expected to be at `/var/run/fastd.<interface>.sock`.
-
-~~The http listen address is currently hardcoded to `0.0.0.0:9101`.~~
-
-Todo
-----
-
-* [x] set http listening address with a `--web.listen-address` argument.
-* [x] change binary name to `prometheus-fastd-exporter` since this is the naming convention
-* [ ] add a proper systemd-service file
-* [ ] add more metrics?
+Simply run `./fastd-exporter-rust -s <socket>`. You can export data from multiple fastd instances by repeating the `-s <socket>` option.

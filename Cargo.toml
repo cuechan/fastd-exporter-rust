@@ -3,7 +3,10 @@ name = "prometheus-fastd-exporter"
 version = "0.0.1"
 authors = ["Paul Maruhn <paulmaruhn@posteo.de>"]
 edition = "2018"
-
+description = "Prometheus exporter for fastd."
+homepage = "https://paul.pages.chaotikum.org/prometheus-fastd-exporter/"
+documentation = "https://paul.pages.chaotikum.org/prometheus-fastd-exporter/"
+repository = "https://git.chaotikum.org/paul/prometheus-fastd-exporter"
 
 [dependencies]
 clap = "2.33.0"
