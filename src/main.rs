@@ -16,11 +16,13 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
 use tiny_http::{self, Method, Response, Server};
+use std::fs::{self, DirEntry};
+use std::path::Path;
+use std::collections::HashSet;
 
 mod fastd;
 
 const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0:9281";
-
 
 fn main() {
 	// env::set_var("FASTD", "debug");
@@ -29,22 +31,31 @@ fn main() {
 	let matches = clap::App::new(env!("CARGO_PKG_NAME"))
 		.author(env!("CARGO_PKG_AUTHORS"))
 		.about(env!("CARGO_PKG_DESCRIPTION"))
-		.arg(
-			Arg::with_name("socket")
-				.takes_value(true)
-				.conflicts_with("interface")
-				.long("socket")
-				.short("s")
-				.help("Path to status socket")
-				.group("status_socket")
-				// following allows `--sock /tmp/vpn01 --sock /tmp/vpn02` but not --sock /tmp/vpn01,/tmp/vpn02
-				.number_of_values(1)
-				.multiple(true)
-				.required(true)
-				.validator(|s| match PathBuf::from(s).exists() {
-					true => Ok(()),
-					false => Err("socket does not exists".to_string()),
-				}),
+		.arg(Arg::with_name("socket")
+			.takes_value(true)
+			.conflicts_with("directory")
+			.long("socket")
+			.short("s")
+			.help("Path to status socket")
+			.group("status_socket")
+			// following allows `--sock /tmp/vpn01 --sock /tmp/vpn02` but not --sock /tmp/vpn01,/tmp/vpn02
+			.number_of_values(1)
+			.multiple(true)
+			.validator(|s| match PathBuf::from(s).exists() {
+				true => Ok(()),
+				false => Err("socket does not exists".to_string()),
+			}),
+		)
+		.arg(Arg::with_name("directory")
+			.takes_value(true)
+			.conflicts_with("socket")
+			.short("d")
+			.long("directory")
+			.help("directory with fastd status sockets. All files in that directory must be status sockets")
+			.validator(|d| match PathBuf::from(d).is_dir() {
+				true => Ok(()),
+				false => Err("is not a directory".to_string()),
+			})
 		)
 		.arg(
 			Arg::with_name("listen-address")
@@ -56,12 +67,31 @@ fn main() {
 		)
 		.get_matches();
 
-	// if !matches.is_present("status_socket") {
-	// 	eprintln!("interface or socket required. Try {} --help", env!("CARGO_PKG_NAME"));
-	// 	exit(1);
-	// }
 
-	let socket_paths: Vec<PathBuf> = matches.values_of("socket").unwrap().map(|x| PathBuf::from(x)).collect();
+	let mut socket_paths: Vec<PathBuf> = vec![];
+
+	if let Some(d) = matches.value_of("directory") {
+		fs::read_dir(PathBuf::from(d)).unwrap()
+			.map(|f| f.unwrap().path())
+			.filter(|file| {
+				file.is_file()
+			})
+			.for_each(|file| {
+				socket_paths.push(file);
+			});
+	}
+
+	if let Some(sockets) = matches.values_of("socket") {
+		sockets.map(|f| PathBuf::from(f))
+			.filter(|file| {
+				file.is_file()
+			})
+			.for_each(|file| {
+				socket_paths.push(file);
+			});
+	}
+
+
 
 	start_server(
 		matches.value_of("listen-address").unwrap().parse().unwrap(),
@@ -99,27 +129,26 @@ pub fn get_metrics(fastd_statuses: Vec<FastdStatus>) -> Vec<u8> {
 	let peer_statistics_gauge: GaugeVec = GaugeVec::new(
 		Opts::new("fastd_peer_traffic", "per peer statistics"),
 		&["key", "name", "iface", "type", "kind"],
-	).unwrap();
+	)
+	.unwrap();
 	reg.register(Box::new(peer_statistics_gauge.clone())).unwrap();
 
 	let peer_uptime: GaugeVec = GaugeVec::new(
 		Opts::new("fastd_peer_connection_uptime", "per peer statistics"),
 		&["key", "name", "interface"],
-	).unwrap();
+	)
+	.unwrap();
 	reg.register(Box::new(peer_uptime.clone())).unwrap();
-
 
 	let fastd_statistics = GaugeVec::new(
 		Opts::new("fastd_total_traffic", "total traffic"),
 		&["iface", "type", "kind"],
-	).unwrap();
+	)
+	.unwrap();
 
 	reg.register(Box::new(fastd_statistics.clone())).unwrap();
 
-	let uptime: GaugeVec = GaugeVec::new(
-		Opts::new("fastd_total_uptime", "fastd uptime"),
-		&["iface"]
-	).unwrap();
+	let uptime: GaugeVec = GaugeVec::new(Opts::new("fastd_total_uptime", "fastd uptime"), &["iface"]).unwrap();
 
 	for instance in fastd_statuses {
 		uptime.with_label_values(&[&instance.interface]).set(instance.uptime);
