@@ -84,7 +84,7 @@ fn main() {
 	if let Some(sockets) = matches.values_of("socket") {
 		sockets.map(|f| PathBuf::from(f))
 			.filter(|file| {
-				file.is_file()
+				file.exists()
 			})
 			.for_each(|file| {
 				socket_paths.push(file);
