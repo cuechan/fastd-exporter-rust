@@ -1,4 +1,4 @@
-[prometheus-fastd-exporter](https://paul.pages.chaotikum.org/prometheus-fastd-exporter/)
+[prometheus-fastd-exporter](https://freifunk-luebeck.pages.chaotikum.org/prometheus-fastd-exporter/)
 =============================
 [![pipeline status](https://git.chaotikum.org/paul/prometheus-fastd-exporter/badges/master/pipeline.svg)](https://git.chaotikum.org/paul/prometheus-fastd-exporter/-/commits/master)
 [![latest .deb](https://img.shields.io/badge/Debian-requestd.deb-%23CE0056)](https://freifunk-luebeck.pages.chaotikum.org/prometheus-fastd-exporter/prometheus-fastd-exporter.deb)
