@@ -1,14 +1,16 @@
 [prometheus-fastd-exporter](https://paul.pages.chaotikum.org/prometheus-fastd-exporter/)
 =============================
 [![pipeline status](https://git.chaotikum.org/paul/prometheus-fastd-exporter/badges/master/pipeline.svg)](https://git.chaotikum.org/paul/prometheus-fastd-exporter/-/commits/master)
+[![latest .deb](https://img.shields.io/badge/Debian-requestd.deb-%23CE0056)](https://freifunk-luebeck.pages.chaotikum.org/prometheus-fastd-exporter/prometheus-fastd-exporter.deb)
 
 A prometheus exporter for fastd.
 
 
 Debian package
 --------------
+[![latest .deb](https://img.shields.io/badge/Debian-requestd.deb-%23CE0056)](https://freifunk-luebeck.pages.chaotikum.org/prometheus-fastd-exporter/prometheus-fastd-exporter.deb)
 
-[should be here](https://paul.pages.chaotikum.org/prometheus-fastd-exporter/prometheus-fastd-exporter.deb).
+
 After installing it with `dpgk -i prometheus-fastd-exporter.deb` you need to reload systemd: `sudo systemctl daemon-relaod`.
 The exporter is not enabled by default. Enable it with `sudo systemctl enable prometheus-fastd-exporter`.
 
