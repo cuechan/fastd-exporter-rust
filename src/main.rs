@@ -74,7 +74,7 @@ fn main() {
 		fs::read_dir(PathBuf::from(d)).unwrap()
 			.map(|f| f.unwrap().path())
 			.filter(|file| {
-				file.is_file()
+				file.exists()
 			})
 			.for_each(|file| {
 				socket_paths.push(file);
