@@ -91,7 +91,7 @@ fn main() {
 			});
 	}
 
-
+	info!("start monitoring sockets: {:#?}", socket_paths);
 
 	start_server(
 		matches.value_of("listen-address").unwrap().parse().unwrap(),
